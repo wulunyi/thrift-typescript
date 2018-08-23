@@ -56,12 +56,12 @@ export function renderIncludes(
                     ts.createNamespaceImport(ts.createIdentifier(name)),
                 ),
                 ts.createLiteral(
-                    `./${path.join(
+                    `${path.join(
                         path.relative(
                             path.dirname(currentPath),
                             path.dirname(includePath),
                         ),
-                    )}`,
+                    )}/${name}`,
                 ),
             ))
         }
