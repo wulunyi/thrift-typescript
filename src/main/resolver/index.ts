@@ -88,11 +88,10 @@ import {
  */
 export function resolveFile(outPath: string, parsedFile: IParsedFile, cache: IResolvedCache = {}): IResolvedFile {
     const cacheKey: string = `${parsedFile.path}/${parsedFile.name}`
-
     if (cacheKey === '/' || !cache[cacheKey]) {
         const identifiers: IIdentifierMap = {}
         const resolvedIncludes: IResolvedIncludeMap = {}
-        const namespace: INamespace = resolveNamespace(outPath, parsedFile.ast)
+        const namespace: INamespace = resolveNamespace(outPath, parsedFile.ast, parsedFile.name)
         const includes: Array<IResolvedFile> =
             parsedFile.includes.map((next: IParsedFile): IResolvedFile => {
                 return resolveFile(outPath, next)
