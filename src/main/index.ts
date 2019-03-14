@@ -10,6 +10,7 @@ import {
     IParsedFile,
     IRenderedCache,
     IRenderedFile,
+    IRenderState,
     IResolvedCache,
     IResolvedFile,
     IThriftFile,
@@ -27,6 +28,8 @@ import { rendererForTarget } from './render'
 
 import { printErrors } from './debugger'
 
+import { mergeWithDefaults } from './defaults'
+
 import {
     collectInvalidFiles,
     collectSourceFiles,
@@ -39,6 +42,8 @@ import {
     saveFiles,
 } from './utils'
 
+import { DEFAULT_OPTIONS } from './options'
+
 /**
  * This function is mostly for testing purposes. It does not support includes.
  * Given a string of Thrift IDL it will return a string of TypeScript. If the
@@ -47,11 +52,29 @@ import {
  *
  * @param source
  */
-export function make(source: string, target: CompileTarget = 'thrift-server'): string {
+export function make(
+    source: string,
+    target: CompileTarget = 'thrift-server',
+    strictUnions: boolean = false,
+): string {
+    const options: IMakeOptions = mergeWithDefaults({
+        target,
+        strictUnions,
+    })
     const parsedFile: IParsedFile = parseSource(source)
-    const resolvedAST: IResolvedFile = resolveFile('', parsedFile)
+    const resolvedAST: IResolvedFile = resolveFile(
+        '',
+        parsedFile,
+        DEFAULT_OPTIONS,
+    )
     const validAST: IResolvedFile = validateFile(resolvedAST)
-    return print(processStatements(validAST.body, validAST.identifiers, rendererForTarget(target)))
+    const state: IRenderState = {
+        options,
+        identifiers: validAST.identifiers,
+    }
+    return print(
+        processStatements(validAST.body, state, rendererForTarget(target)),
+    )
 }
 
 /**
@@ -65,41 +88,55 @@ export function make(source: string, target: CompileTarget = 'thrift-server'): s
  *
  * @param options
  */
-export function generate(options: IMakeOptions): void {
-    const rootDir: string = path.resolve(process.cwd(), options.rootDir)
-    const outDir: string = path.resolve(rootDir, options.outDir)
-    const sourceDir: string = path.resolve(rootDir, options.sourceDir)
+export function generate(options: Partial<IMakeOptions>): void {
+    const mergedOptions: IMakeOptions = mergeWithDefaults(options)
+    const rootDir: string = path.resolve(process.cwd(), mergedOptions.rootDir)
+    const outDir: string = path.resolve(rootDir, mergedOptions.outDir)
+    const sourceDir: string = path.resolve(rootDir, mergedOptions.sourceDir)
     const includeCache: IIncludeCache = {}
     const resolvedCache: IResolvedCache = {}
     const renderedCache: IRenderedCache = {}
 
-    const validatedFiles: Array<IResolvedFile> = collectSourceFiles(sourceDir, options).reduce(
-        (acc: Array<IResolvedFile>, next: string): Array<IResolvedFile> => {
-            const thriftFile: IThriftFile = readThriftFile(next, [sourceDir])
-            const parsedFile: IParsedFile = parseFile(sourceDir, thriftFile, includeCache)
-            const resolvedFile: IResolvedFile = resolveFile(outDir, parsedFile, resolvedCache)
-            return acc.concat(flattenResolvedFile(resolvedFile).map(validateFile))
-        },
-        [],
+    const validatedFiles: Array<IResolvedFile> = collectSourceFiles(
+        sourceDir,
+        mergedOptions,
+    ).reduce((acc: Array<IResolvedFile>, next: string): Array<
+        IResolvedFile
+    > => {
+        const thriftFile: IThriftFile = readThriftFile(next, [sourceDir])
+        const parsedFile: IParsedFile = parseFile(
+            sourceDir,
+            thriftFile,
+            includeCache,
+        )
+        const resolvedFile: IResolvedFile = resolveFile(
+            outDir,
+            parsedFile,
+            mergedOptions,
+            resolvedCache,
+        )
+        return acc.concat(flattenResolvedFile(resolvedFile).map(validateFile))
+    }, [])
+
+    const dedupedFiles: Array<IResolvedFile> = dedupResolvedFiles(
+        validatedFiles,
     )
 
-    const dedupedFiles: Array<IResolvedFile> = dedupResolvedFiles(validatedFiles)
     const invalidFiles: Array<IResolvedFile> = collectInvalidFiles(dedupedFiles)
 
     if (invalidFiles.length > 0) {
         printErrors(invalidFiles)
         process.exitCode = 1
-
     } else {
-        const namespaces: Array<INamespaceFile> = organizeByNamespace(dedupedFiles)
+        const namespaces: Array<INamespaceFile> = organizeByNamespace(
+            dedupedFiles,
+        )
         const renderedFiles: Array<IRenderedFile> = namespaces.map(
             (next: INamespaceFile): IRenderedFile => {
                 return generateFile(
-                    rendererForTarget(options.target),
-                    rootDir,
-                    outDir,
-                    sourceDir,
+                    rendererForTarget(mergedOptions.target),
                     next,
+                    mergedOptions,
                     renderedCache,
                 )
             },

@@ -1,26 +1,26 @@
 import {
+    createHttpClient,
+    createHttpConnection,
     createWebServer,
+    HttpConnection,
     Int64,
     TBinaryProtocol,
     TBufferedTransport,
-    HttpConnection,
-    createHttpConnection,
-    createHttpClient,
 } from 'thrift'
 
 import {
-    AddService,
     Calculator,
     Choice,
+    CommonStruct,
+    ExceptionOne,
+    ExceptionTwo,
     Operation,
     Work,
-    CommonStruct,
 } from './codegen/calculator'
 
-import {
-    SharedStruct,
-    SharedUnion,
-} from './codegen/shared'
+import { AddService } from './codegen/add-service'
+
+import { SharedStruct, SharedUnion } from './codegen/shared'
 
 import { Server } from 'net'
 
@@ -41,14 +41,23 @@ export function createCalculatorServer(): Server {
         https: false,
         headers: {
             Host: ADD_SERVER_CONFIG.hostName,
-        }
+        },
     }
-    const connection: HttpConnection = createHttpConnection(ADD_SERVER_CONFIG.hostName, ADD_SERVER_CONFIG.port, options)
-    const thriftClient: AddService.Client = createHttpClient(AddService.Client, connection)
+    const connection: HttpConnection = createHttpConnection(
+        ADD_SERVER_CONFIG.hostName,
+        ADD_SERVER_CONFIG.port,
+        options,
+    )
+    const thriftClient: AddService.Client = createHttpClient(
+        AddService.Client,
+        connection,
+    )
 
     // Handler: Implement the hello service
     const myServiceHandler: Calculator.IHandler = {
-        ping(): void {},
+        ping(): void {
+            return
+        },
         add(a: number, b: number): Promise<number> {
             return thriftClient.add(a, b)
         },
@@ -69,7 +78,9 @@ export function createCalculatorServer(): Server {
                     throw new Error(`Unsupported operation: ${work.op}`)
             }
         },
-        zip(): void {},
+        zip(): void {
+            return
+        },
         getStruct(key: number): SharedStruct {
             return new SharedStruct({ key, value: 'test' })
         },
@@ -109,14 +120,24 @@ export function createCalculatorServer(): Server {
             return Array.from(map.values())
         },
         listToMap(list: Array<Array<string>>): Map<string, string> {
-            return list.reduce((acc: Map<string, string>, next: Array<string>) => {
-                acc.set(next[0], next[1])
-                return acc
-            }, new Map())
+            return list.reduce(
+                (acc: Map<string, string>, next: Array<string>) => {
+                    acc.set(next[0], next[1])
+                    return acc
+                },
+                new Map(),
+            )
         },
         fetchThing(): CommonStruct {
             return new SharedStruct({ key: 5, value: 'test' })
-        }
+        },
+        throw(num: number): void {
+            if (num === 1) {
+                throw new ExceptionOne({ message: 'test one' })
+            } else {
+                throw new ExceptionTwo({ whatHappened: 'test two' })
+            }
+        },
     }
 
     // ServiceOptions: The I/O stack for the service

@@ -22,10 +22,7 @@ import {
     IThriftError,
 } from '../types'
 
-import {
-    constToTypeString,
-    fieldTypeToString,
-} from './utils'
+import { constToTypeString, fieldTypeToString } from './utils'
 
 /**
  * Internal class that we will transform into an IThriftError object before passing to the reporter.
@@ -42,7 +39,10 @@ class ValidationError extends Error {
     }
 }
 
-function createValidationError(message: string, loc: TextLocation): IThriftError {
+function createValidationError(
+    message: string,
+    loc: TextLocation,
+): IThriftError {
     return {
         type: ErrorType.ValidationError,
         message,
@@ -57,10 +57,17 @@ function emptyLocation(): TextLocation {
     }
 }
 
-function typeMismatch(expected: FunctionType, actual: ConstValue, loc: TextLocation): ValidationError {
+function typeMismatch(
+    expected: FunctionType,
+    actual: ConstValue,
+    loc: TextLocation,
+): ValidationError {
     const expectedType: string = fieldTypeToString(expected)
     const actualType: string = constToTypeString(actual)
-    return new ValidationError(`Expected type ${expectedType} but found type ${actualType}`, loc)
+    return new ValidationError(
+        `Expected type ${expectedType} but found type ${actualType}`,
+        loc,
+    )
 }
 
 /**
@@ -128,7 +135,10 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
         const newBody: Array<ThriftStatement> = []
         while (!isAtEnd()) {
             try {
-                newBody.push(validateStatement(resolvedFile.body[currentIndex]))
+                const statement = validateStatement(
+                    resolvedFile.body[currentIndex],
+                )
+                newBody.push(statement)
             } catch (e) {
                 errors.push(createValidationError(e.message, e.loc))
             }
@@ -143,14 +153,48 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
         return currentIndex >= bodySize
     }
 
-    function getIdentifier(loc: TextLocation, ...names: Array<string>): IResolvedIdentifier {
+    function resolveValue(value: ConstValue): ConstValue {
+        if (
+            value.type === SyntaxType.Identifier &&
+            resolvedFile.identifiers[value.value]
+        ) {
+            const resolvedIdentifier = resolvedFile.identifiers[value.value]
+            if (
+                resolvedIdentifier.definition.type ===
+                SyntaxType.ConstDefinition
+            ) {
+                if (
+                    resolvedIdentifier.definition.initializer.type ===
+                    SyntaxType.Identifier
+                ) {
+                    return resolveValue(
+                        resolvedIdentifier.definition.initializer,
+                    )
+                } else {
+                    return resolvedIdentifier.definition.initializer
+                }
+            } else {
+                return value
+            }
+        } else {
+            return value
+        }
+    }
+
+    function requireIdentifier(
+        loc: TextLocation,
+        ...names: Array<string>
+    ): IResolvedIdentifier {
         for (const name of names) {
             if (resolvedFile.identifiers[name]) {
                 return resolvedFile.identifiers[name]
             }
         }
 
-        throw new ValidationError(`Unable to resolve type of Identifier ${names[0]}`, loc)
+        throw new ValidationError(
+            `Unable to resolve type of Identifier ${names[0]}`,
+            loc,
+        )
     }
 
     /**
@@ -177,8 +221,12 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     type: SyntaxType.ConstDefinition,
                     name: statement.name,
                     fieldType: statement.fieldType,
-                    initializer: validateValue(statement.fieldType, statement.initializer),
+                    initializer: validateValue(
+                        statement.fieldType,
+                        statement.initializer,
+                    ),
                     comments: statement.comments,
+                    annotations: statement.annotations,
                     loc: statement.loc,
                 }
 
@@ -188,6 +236,7 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     name: statement.name,
                     fields: validateFields(statement.fields),
                     comments: statement.comments,
+                    annotations: statement.annotations,
                     loc: statement.loc,
                 }
 
@@ -197,6 +246,7 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     name: statement.name,
                     fields: validateFields(statement.fields),
                     comments: statement.comments,
+                    annotations: statement.annotations,
                     loc: statement.loc,
                 }
 
@@ -206,6 +256,7 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     name: statement.name,
                     fields: validateFields(statement.fields),
                     comments: statement.comments,
+                    annotations: statement.annotations,
                     loc: statement.loc,
                 }
 
@@ -214,12 +265,12 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     type: SyntaxType.ServiceDefinition,
                     name: statement.name,
                     functions: validateFunctions(statement.functions),
-                    extends: (
-                        (statement.extends !== null) ?
-                            validateExtends(statement.extends) :
-                            null
-                    ),
+                    extends:
+                        statement.extends !== null
+                            ? validateExtends(statement.extends)
+                            : null,
                     comments: statement.comments,
+                    annotations: statement.annotations,
                     loc: statement.loc,
                 }
 
@@ -230,12 +281,17 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
     }
 
     function validateExtends(id: Identifier): Identifier {
-        const resolvedID: IResolvedIdentifier = getIdentifier(id.loc, id.value)
+        const resolvedID: IResolvedIdentifier = requireIdentifier(
+            id.loc,
+            id.value,
+        )
         if (resolvedID.definition.type === SyntaxType.ServiceDefinition) {
             return id
         } else {
             throw new ValidationError(
-                `Service type expected but found type ${resolvedID.definition.type}`,
+                `Service type expected but found type ${
+                    resolvedID.definition.type
+                }`,
                 id.loc,
             )
         }
@@ -244,7 +300,10 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
     function valuesForEnum(enumDef: EnumDefinition): Array<number> {
         let previousValue: number = -1
         const values: Array<number | null> = enumDef.members.reduce(
-            (acc: Array<number | null>, next: EnumMember): Array<number | null> => {
+            (
+                acc: Array<number | null>,
+                next: EnumMember,
+            ): Array<number | null> => {
                 if (next.initializer !== null) {
                     return [...acc, parseInt(next.initializer.value.value, 10)]
                 } else {
@@ -254,34 +313,41 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
             [],
         )
 
-        return values.map((next: number | null): number => {
-            if (next !== null) {
-                previousValue = next
-                return next
-            } else {
-                return ++previousValue
-            }
-        })
+        return values.map(
+            (next: number | null): number => {
+                if (next !== null) {
+                    previousValue = next
+                    return next
+                } else {
+                    return ++previousValue
+                }
+            },
+        )
     }
 
     function enumMembers(enumDef: EnumDefinition): Array<string> {
-        return enumDef.members.map((next: EnumMember): string => {
-            return next.name.value
-        })
+        return enumDef.members.map(
+            (next: EnumMember): string => {
+                return next.name.value
+            },
+        )
     }
 
-    function validateEnum(enumName: string, enumDef: EnumDefinition, constValue: ConstValue): ConstValue {
+    function validateEnum(
+        enumName: string,
+        enumDef: EnumDefinition,
+        constValue: ConstValue,
+    ): ConstValue {
         switch (constValue.type) {
             /**
              * If we're dealing with object access (Status.SUCCESS), we just want the base of the identifier (Status)
              */
             case SyntaxType.Identifier:
                 const parts = constValue.value.split('.')
-                const baseName = (
-                    (parts.length > 2) ? `${parts[0]}.${parts[1]}` : parts[0]
-                )
-                const accessName = parts[(parts.length - 1)]
-                const resolvedConst: IResolvedIdentifier = getIdentifier(
+                const baseName =
+                    parts.length > 2 ? `${parts[0]}.${parts[1]}` : parts[0]
+                const accessName = parts[parts.length - 1]
+                const resolvedConst: IResolvedIdentifier = requireIdentifier(
                     constValue.loc,
                     baseName,
                     constValue.value,
@@ -291,13 +357,17 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                         return constValue
                     } else {
                         throw new ValidationError(
-                            `The value ${accessName} is not a member of enum ${enumDef.name.value}`,
+                            `The value ${accessName} is not a member of enum ${
+                                enumDef.name.value
+                            }`,
                             constValue.loc,
                         )
                     }
                 } else {
                     throw new ValidationError(
-                        `The value ${resolvedConst.name} is not assignable to type ${enumDef.name.value}`,
+                        `The value ${
+                            resolvedConst.name
+                        } is not assignable to type ${enumDef.name.value}`,
                         constValue.loc,
                     )
                 }
@@ -313,26 +383,33 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                     return constValue
                 } else {
                     throw new ValidationError(
-                        `The value ${constValue.value.value} is not assignable to type ${enumDef.name.value}`,
+                        `The value ${
+                            constValue.value.value
+                        } is not assignable to type ${enumDef.name.value}`,
                         constValue.loc,
                     )
                 }
 
             default:
                 throw new ValidationError(
-                    `Value of type ${constToTypeString(constValue)} cannot be assigned to type ${
-                        enumDef.name.value
-                    }`,
+                    `Value of type ${constToTypeString(
+                        constValue,
+                    )} cannot be assigned to type ${enumDef.name.value}`,
                     constValue.loc,
                 )
         }
     }
 
-    function validateTypeForIdentifier(id: IResolvedIdentifier, value: ConstValue): ConstValue {
+    function validateTypeForIdentifier(
+        id: IResolvedIdentifier,
+        value: ConstValue,
+    ): ConstValue {
         switch (id.definition.type) {
             case SyntaxType.ServiceDefinition:
                 throw new ValidationError(
-                    `Service ${id.definition.name.value} is being used as a value`,
+                    `Service ${
+                        id.definition.name.value
+                    } is being used as a value`,
                     value.loc,
                 )
 
@@ -359,104 +436,167 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
         }
     }
 
-    function validateValue(expectedType: FunctionType, value: ConstValue): ConstValue {
+    function validateValue(
+        expectedType: FunctionType,
+        value: ConstValue,
+    ): ConstValue {
+        const resolvedValue: ConstValue = resolveValue(value)
         switch (expectedType.type) {
             case SyntaxType.VoidKeyword:
-                throw new ValidationError(`Cannot assign value to type void`, value.loc)
+                throw new ValidationError(
+                    `Cannot assign value to type void`,
+                    resolvedValue.loc,
+                )
 
             case SyntaxType.Identifier:
-                return validateTypeForIdentifier(getIdentifier(expectedType.loc, expectedType.value), value)
+                return validateTypeForIdentifier(
+                    requireIdentifier(expectedType.loc, expectedType.value),
+                    resolvedValue,
+                )
 
             case SyntaxType.StringKeyword:
-                if (value.type === SyntaxType.StringLiteral) {
+                if (resolvedValue.type === SyntaxType.StringLiteral) {
                     return value
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.BoolKeyword:
-                if (value.type === SyntaxType.BooleanLiteral) {
-                    return value
+                if (resolvedValue.type === SyntaxType.BooleanLiteral) {
+                    return resolvedValue
 
                     // Handle the case where the literal values 1 or 0 can be used to represent booleans
                 } else if (
-                    value.type === SyntaxType.IntConstant &&
-                    (value.value.value === '0' || value.value.value === '1')
+                    resolvedValue.type === SyntaxType.IntConstant &&
+                    (resolvedValue.value.value === '0' ||
+                        resolvedValue.value.value === '1')
                 ) {
-                    return createBooleanLiteral(value.value.value === '1', value.loc)
+                    return createBooleanLiteral(
+                        resolvedValue.value.value === '1',
+                        resolvedValue.loc,
+                    )
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.DoubleKeyword:
-                if (value.type === SyntaxType.DoubleConstant || value.type === SyntaxType.IntConstant) {
-                    return value
+                if (
+                    resolvedValue.type === SyntaxType.DoubleConstant ||
+                    resolvedValue.type === SyntaxType.IntConstant
+                ) {
+                    return resolvedValue
                 } else {
                     throw typeMismatch(expectedType, value, value.loc)
                 }
 
             case SyntaxType.BinaryKeyword:
-                if (value.type === SyntaxType.StringLiteral) {
+                if (resolvedValue.type === SyntaxType.StringLiteral) {
                     return value
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.ByteKeyword:
             case SyntaxType.I8Keyword:
             case SyntaxType.I16Keyword:
             case SyntaxType.I32Keyword:
-                if (value.type === SyntaxType.IntConstant) {
-                    return value
+                if (resolvedValue.type === SyntaxType.IntConstant) {
+                    return resolvedValue
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.I64Keyword:
-                if (value.type === SyntaxType.IntConstant) {
-                    return value
+                if (resolvedValue.type === SyntaxType.IntConstant) {
+                    return resolvedValue
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.SetType:
-                if (value.type === SyntaxType.ConstList) {
+                if (resolvedValue.type === SyntaxType.ConstList) {
                     return {
                         type: SyntaxType.ConstList,
-                        elements: value.elements.map((next: ConstValue): ConstValue => {
-                            return validateValue(expectedType.valueType, next)
-                        }),
-                        loc: value.loc,
+                        elements: resolvedValue.elements.map(
+                            (next: ConstValue): ConstValue => {
+                                return validateValue(
+                                    expectedType.valueType,
+                                    next,
+                                )
+                            },
+                        ),
+                        loc: resolvedValue.loc,
                     }
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.ListType:
-                if (value.type === SyntaxType.ConstList) {
+                if (resolvedValue.type === SyntaxType.ConstList) {
                     return {
                         type: SyntaxType.ConstList,
-                        elements: value.elements.map((next: ConstValue): ConstValue => {
-                            return validateValue(expectedType.valueType, next)
-                        }),
-                        loc: value.loc,
+                        elements: resolvedValue.elements.map(
+                            (next: ConstValue): ConstValue => {
+                                return validateValue(
+                                    expectedType.valueType,
+                                    next,
+                                )
+                            },
+                        ),
+                        loc: resolvedValue.loc,
                     }
                 } else {
-                    throw typeMismatch(expectedType, value, value.loc)
+                    throw typeMismatch(
+                        expectedType,
+                        resolvedValue,
+                        resolvedValue.loc,
+                    )
                 }
 
             case SyntaxType.MapType:
-                if (value.type === SyntaxType.ConstMap) {
+                if (resolvedValue.type === SyntaxType.ConstMap) {
                     return {
                         type: SyntaxType.ConstMap,
-                        properties: value.properties.map((next: PropertyAssignment): PropertyAssignment => {
-                            return {
-                                type: SyntaxType.PropertyAssignment,
-                                name: validateValue(expectedType.keyType, next.name),
-                                initializer: validateValue(expectedType.valueType, next.initializer),
-                                loc: next.loc,
-                            }
-                        }),
+                        properties: resolvedValue.properties.map(
+                            (next: PropertyAssignment): PropertyAssignment => {
+                                return {
+                                    type: SyntaxType.PropertyAssignment,
+                                    name: validateValue(
+                                        expectedType.keyType,
+                                        next.name,
+                                    ),
+                                    initializer: validateValue(
+                                        expectedType.valueType,
+                                        next.initializer,
+                                    ),
+                                    loc: next.loc,
+                                }
+                            },
+                        ),
                         loc: value.loc,
                     }
                 } else {
@@ -482,12 +622,13 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
     function validateFieldType(fieldType: FieldType): FieldType {
         switch (fieldType.type) {
             case SyntaxType.Identifier:
-                if (getIdentifier(fieldType.loc, fieldType.value) != null) {
+                if (requireIdentifier(fieldType.loc, fieldType.value) != null) {
                     return fieldType
-
                 } else {
                     throw new ValidationError(
-                        `Unable to resolve type of identifier ${fieldType.value}`,
+                        `Unable to resolve type of identifier ${
+                            fieldType.value
+                        }`,
                         fieldType.loc,
                     )
                 }
@@ -519,7 +660,9 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
         }
     }
 
-    function validateFields(fields: Array<FieldDefinition>): Array<FieldDefinition> {
+    function validateFields(
+        fields: Array<FieldDefinition>,
+    ): Array<FieldDefinition> {
         let generatedFieldID: number = 0
         const usedFieldIDs: Array<number> = []
 
@@ -532,68 +675,89 @@ export function validateFile(resolvedFile: IResolvedFile): IResolvedFile {
                 }
             } else if (fieldID.value < 0) {
                 throw new ValidationError(
-                    `Field IDs should be positive integers, found ${fieldID.value}`,
+                    `Field IDs should be positive integers, found ${
+                        fieldID.value
+                    }`,
                     fieldID.loc,
                 )
             } else if (usedFieldIDs.indexOf(fieldID.value) > -1) {
-                throw new ValidationError(`Found duplicate usage of fieldID: ${fieldID.value}`, fieldID.loc)
+                throw new ValidationError(
+                    `Found duplicate usage of fieldID: ${fieldID.value}`,
+                    fieldID.loc,
+                )
             } else {
                 usedFieldIDs.push(fieldID.value)
                 return fieldID
             }
         }
 
-        return fields.map((field: FieldDefinition): FieldDefinition => {
-            return {
-                type: SyntaxType.FieldDefinition,
-                name: field.name,
-                fieldID: validateFieldID(field.fieldID),
-                fieldType: validateFunctionType(field.fieldType),
-                requiredness: field.requiredness,
-                defaultValue: (
-                    (field.defaultValue !== null) ?
-                        validateValue(field.fieldType, field.defaultValue) :
-                        null
-                ),
-                comments: field.comments,
-                loc: field.loc,
-            }
-        })
+        return fields.map(
+            (field: FieldDefinition): FieldDefinition => {
+                return {
+                    type: SyntaxType.FieldDefinition,
+                    name: field.name,
+                    fieldID: validateFieldID(field.fieldID),
+                    fieldType: validateFunctionType(field.fieldType),
+                    requiredness: field.requiredness,
+                    defaultValue:
+                        field.defaultValue !== null
+                            ? validateValue(field.fieldType, field.defaultValue)
+                            : null,
+                    comments: field.comments,
+                    annotations: field.annotations,
+                    loc: field.loc,
+                }
+            },
+        )
     }
 
-    function validateFunctions(funcs: Array<FunctionDefinition>): Array<FunctionDefinition> {
-        return funcs.map((func: FunctionDefinition): FunctionDefinition => {
-            if (func.oneway && func.returnType.type !== SyntaxType.VoidKeyword) {
-                throw new ValidationError(
-                    `Oneway function must have return type of void, instead found ${fieldTypeToString(
-                        func.returnType,
-                    )}`,
-                    func.loc,
-                )
-            }
+    function validateFunctions(
+        funcs: Array<FunctionDefinition>,
+    ): Array<FunctionDefinition> {
+        return funcs.map(
+            (func: FunctionDefinition): FunctionDefinition => {
+                if (
+                    func.oneway &&
+                    func.returnType.type !== SyntaxType.VoidKeyword
+                ) {
+                    throw new ValidationError(
+                        `Oneway function must have return type of void, instead found ${fieldTypeToString(
+                            func.returnType,
+                        )}`,
+                        func.loc,
+                    )
+                }
 
-            return {
-                type: SyntaxType.FunctionDefinition,
-                name: func.name,
-                oneway: func.oneway,
-                returnType: validateFunctionType(func.returnType),
-                fields: validateFields(
-                    func.fields.map((next: FieldDefinition) => {
-                        next.requiredness = next.requiredness === 'optional' ? 'optional' : 'required'
-                        return next
-                    }),
-                ),
-                throws: validateFields(
-                    func.throws.map((next: FieldDefinition) => {
-                        next.requiredness = next.requiredness === 'optional' ? 'optional' : 'required'
-                        return next
-                    }),
-                ),
-                modifiers: func.modifiers,
-                comments: func.comments,
-                loc: func.loc,
-            }
-        })
+                return {
+                    type: SyntaxType.FunctionDefinition,
+                    name: func.name,
+                    oneway: func.oneway,
+                    returnType: validateFunctionType(func.returnType),
+                    fields: validateFields(
+                        func.fields.map((next: FieldDefinition) => {
+                            next.requiredness =
+                                next.requiredness === 'optional'
+                                    ? 'optional'
+                                    : 'required'
+                            return next
+                        }),
+                    ),
+                    throws: validateFields(
+                        func.throws.map((next: FieldDefinition) => {
+                            next.requiredness =
+                                next.requiredness === 'optional'
+                                    ? 'optional'
+                                    : 'required'
+                            return next
+                        }),
+                    ),
+                    modifiers: func.modifiers,
+                    comments: func.comments,
+                    annotations: func.annotations,
+                    loc: func.loc,
+                }
+            },
+        )
     }
 
     return {

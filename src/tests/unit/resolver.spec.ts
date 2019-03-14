@@ -1,13 +1,20 @@
 import { assert } from 'chai'
-import * as path from 'path'
 import * as fs from 'fs'
+import * as path from 'path'
 
 import { resolveFile } from '../../main/resolver'
 import { parseThriftString } from '../../main/utils'
-import { IResolvedFile, IParsedFile } from '../../main/types'
+
+import { DEFAULT_OPTIONS } from '../../main/options'
+import { IParsedFile, IResolvedFile } from '../../main/types'
 
 function loadSolution(name: string): any {
-    return JSON.parse(fs.readFileSync(path.join(__dirname, `./fixtures/resolver/${name}.solution.json`), 'utf-8'))
+    return JSON.parse(
+        fs.readFileSync(
+            path.join(__dirname, `./fixtures/resolver/${name}.solution.json`),
+            'utf-8',
+        ),
+    )
 }
 
 function objectify(thrift: any): any {
@@ -38,15 +45,22 @@ describe('Thrift TypeScript Resolver', () => {
                     path: '',
                     source: '',
                     includes: [],
-                    ast: parseThriftString(mockIncludeContent)
-                }
+                    ast: parseThriftString(mockIncludeContent),
+                },
             ],
-            ast: parseThriftString(content)
+            ast: parseThriftString(content),
         }
-        const actual: IResolvedFile = resolveFile('', mockParsedFile)
+        const actual: IResolvedFile = resolveFile(
+            '',
+            mockParsedFile,
+            DEFAULT_OPTIONS,
+        )
         const expected: IResolvedFile = loadSolution('imported-id-types')
 
-        assert.deepEqual(objectify(actual.identifiers), objectify(expected.identifiers))
+        assert.deepEqual(
+            objectify(actual.identifiers),
+            objectify(expected.identifiers),
+        )
     })
 
     it('should find and resolve imported identifiers as values', () => {
@@ -73,14 +87,21 @@ describe('Thrift TypeScript Resolver', () => {
                     path: '',
                     source: '',
                     includes: [],
-                    ast: parseThriftString(mockIncludeContent)
-                }
+                    ast: parseThriftString(mockIncludeContent),
+                },
             ],
-            ast: parseThriftString(content)
+            ast: parseThriftString(content),
         }
-        const actual: IResolvedFile = resolveFile('', mockParsedFile)
+        const actual: IResolvedFile = resolveFile(
+            '',
+            mockParsedFile,
+            DEFAULT_OPTIONS,
+        )
         const expected: IResolvedFile = loadSolution('imported-id-values')
 
-        assert.deepEqual(objectify(actual.identifiers), objectify(expected.identifiers))
+        assert.deepEqual(
+            objectify(actual.identifiers),
+            objectify(expected.identifiers),
+        )
     })
 })

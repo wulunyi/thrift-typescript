@@ -3,19 +3,19 @@ export interface ICode {
     data?: Buffer;
 }
 export interface ICodeArgs {
-    status?: number | thrift.Int64;
+    status?: number | string | thrift.Int64;
     data?: string | Buffer;
 }
 export const CodeCodec: thrift.IStructCodec<ICodeArgs, ICode> = {
     encode(args: ICodeArgs, output: thrift.TProtocol): void {
         const obj = {
-            status: (args.status != null ? (typeof args.status === "number" ? new thrift.Int64(args.status) : args.status) : thrift.Int64.fromDecimalString("200")),
+            status: (args.status != null ? (typeof args.status === "number" ? new thrift.Int64(args.status) : typeof args.status === "string" ? thrift.Int64.fromDecimalString(args.status) : args.status) : thrift.Int64.fromDecimalString("200")),
             data: (args.data != null ? (typeof args.data === "string" ? Buffer.from(args.data) : args.data) : Buffer.from("data"))
         };
         output.writeStructBegin("Code");
         if (obj.status != null) {
             output.writeFieldBegin("status", thrift.TType.I64, 1);
-            output.writeI64(obj.status);
+            output.writeI64((typeof obj.status === "number" ? new thrift.Int64(obj.status) : typeof obj.status === "string" ? thrift.Int64.fromDecimalString(obj.status) : obj.status));
             output.writeFieldEnd();
         }
         if (obj.data != null) {
@@ -72,10 +72,12 @@ export const CodeCodec: thrift.IStructCodec<ICodeArgs, ICode> = {
 export class Code extends thrift.StructLike implements ICode {
     public status?: thrift.Int64 = thrift.Int64.fromDecimalString("200");
     public data?: Buffer = Buffer.from("data");
+    public readonly _annotations: thrift.IThriftAnnotations = {};
+    public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
     constructor(args: ICodeArgs = {}) {
         super();
         if (args.status != null) {
-            const value_3: thrift.Int64 = (typeof args.status === "number" ? new thrift.Int64(args.status) : args.status);
+            const value_3: thrift.Int64 = (typeof args.status === "number" ? new thrift.Int64(args.status) : typeof args.status === "string" ? thrift.Int64.fromDecimalString(args.status) : args.status);
             this.status = value_3;
         }
         if (args.data != null) {
@@ -175,6 +177,8 @@ export const MyExceptionCodec: thrift.IStructCodec<IMyExceptionArgs, IMyExceptio
 export class MyException extends thrift.StructLike implements IMyException {
     public description: string;
     public code?: ICode;
+    public readonly _annotations: thrift.IThriftAnnotations = {};
+    public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
     constructor(args: IMyExceptionArgs) {
         super();
         if (args.description != null) {

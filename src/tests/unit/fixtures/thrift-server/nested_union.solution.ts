@@ -4,14 +4,14 @@ export interface IOption {
 }
 export interface IOptionArgs {
     option1?: string | Buffer;
-    option2?: number | thrift.Int64;
+    option2?: number | string | thrift.Int64;
 }
 export const OptionCodec: thrift.IStructCodec<IOptionArgs, IOption> = {
     encode(args: IOptionArgs, output: thrift.TProtocol): void {
         let _fieldsSet: number = 0;
         const obj = {
             option1: (typeof args.option1 === "string" ? Buffer.from(args.option1) : args.option1),
-            option2: (typeof args.option2 === "number" ? new thrift.Int64(args.option2) : args.option2)
+            option2: (typeof args.option2 === "number" ? new thrift.Int64(args.option2) : typeof args.option2 === "string" ? thrift.Int64.fromDecimalString(args.option2) : args.option2)
         };
         output.writeStructBegin("Option");
         if (obj.option1 != null) {
@@ -23,7 +23,7 @@ export const OptionCodec: thrift.IStructCodec<IOptionArgs, IOption> = {
         if (obj.option2 != null) {
             _fieldsSet++;
             output.writeFieldBegin("option2", thrift.TType.I64, 2);
-            output.writeI64(obj.option2);
+            output.writeI64((typeof obj.option2 === "number" ? new thrift.Int64(obj.option2) : typeof obj.option2 === "string" ? thrift.Int64.fromDecimalString(obj.option2) : obj.option2));
             output.writeFieldEnd();
         }
         output.writeFieldStop();
@@ -92,6 +92,8 @@ export const OptionCodec: thrift.IStructCodec<IOptionArgs, IOption> = {
 export class Option extends thrift.StructLike implements IOption {
     public option1?: Buffer;
     public option2?: thrift.Int64;
+    public readonly _annotations: thrift.IThriftAnnotations = {};
+    public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
     constructor(args: IOptionArgs = {}) {
         super();
         let _fieldsSet: number = 0;
@@ -102,7 +104,7 @@ export class Option extends thrift.StructLike implements IOption {
         }
         if (args.option2 != null) {
             _fieldsSet++;
-            const value_4: thrift.Int64 = (typeof args.option2 === "number" ? new thrift.Int64(args.option2) : args.option2);
+            const value_4: thrift.Int64 = (typeof args.option2 === "number" ? new thrift.Int64(args.option2) : typeof args.option2 === "string" ? thrift.Int64.fromDecimalString(args.option2) : args.option2);
             this.option2 = value_4;
         }
         if (_fieldsSet > 1) {
@@ -216,6 +218,8 @@ export const MyUnionCodec: thrift.IStructCodec<IMyUnionArgs, IMyUnion> = {
 export class MyUnion extends thrift.StructLike implements IMyUnion {
     public name?: string;
     public option?: IOption;
+    public readonly _annotations: thrift.IThriftAnnotations = {};
+    public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
     constructor(args: IMyUnionArgs = {}) {
         super();
         let _fieldsSet: number = 0;

@@ -1,7 +1,12 @@
-import { NamespaceDefinition, SyntaxType, ThriftDocument, ThriftStatement } from '@creditkarma/thrift-parser'
+import {
+    NamespaceDefinition,
+    SyntaxType,
+    ThriftDocument,
+    ThriftStatement,
+} from '@creditkarma/thrift-parser'
 import * as path from 'path'
 
-import { INamespace, INamespaceMap } from '../types'
+import { IMakeOptions, INamespace, INamespaceMap } from '../types'
 
 function createPathForNamespace(outPath: string, ns: string): string {
     return path.resolve(outPath, ns.split('.').join('/'), 'index.ts')
@@ -22,10 +27,21 @@ function emptyNamespace(outPath: string = ''): INamespace {
  *
  * @param namespaces
  */
-function getNamesapce(outPath: string, namespaces: INamespaceMap): INamespace {
-    return namespaces.js != null
-        ? namespaces.js
-        : namespaces.java != null ? namespaces.java : emptyNamespace(outPath)
+function getNamespace(
+    outPath: string,
+    namespaces: INamespaceMap,
+    options: IMakeOptions,
+): INamespace {
+    if (namespaces.js) {
+        return namespaces.js
+    } else if (
+        options.fallbackNamespace !== 'none' &&
+        namespaces[options.fallbackNamespace]
+    ) {
+        return namespaces[options.fallbackNamespace]
+    } else {
+        return emptyNamespace(outPath)
+    }
 }
 
 /**
@@ -33,14 +49,18 @@ function getNamesapce(outPath: string, namespaces: INamespaceMap): INamespace {
  *
  * @param thrift
  */
-export function resolveNamespace(outPath: string, thrift: ThriftDocument): INamespace {
+export function resolveNamespace(
+    outPath: string,
+    thrift: ThriftDocument,
+    options: IMakeOptions,
+): INamespace {
     const statements: Array<NamespaceDefinition> = thrift.body.filter(
         (next: ThriftStatement): next is NamespaceDefinition => {
             return next.type === SyntaxType.NamespaceDefinition
         },
     )
 
-    return getNamesapce(
+    return getNamespace(
         outPath,
         statements.reduce(
             (acc: INamespaceMap, next: NamespaceDefinition) => {
@@ -53,5 +73,6 @@ export function resolveNamespace(outPath: string, thrift: ThriftDocument): IName
             },
             {} as INamespaceMap,
         ),
+        options,
     )
 }

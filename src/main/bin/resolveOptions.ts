@@ -1,22 +1,23 @@
 import { lstatSync } from 'fs'
 
+import { DEFAULT_OPTIONS, defaultLibrary } from '../defaults'
 import { IMakeOptions } from '../types'
+import { deepCopy, deepMerge } from '../utils'
 
 /**
+ * Options:
+ *
  * --rootDir
  * --outDir
  * --removeComments
+ * --strictUnions
+ * --fallbackNamespace
+ * --library
  */
 export function resolveOptions(args: Array<string>): IMakeOptions {
     const len: number = args.length
     let index: number = 0
-    const options: IMakeOptions = {
-        rootDir: '.',
-        outDir: './codegen',
-        sourceDir: './thrift',
-        target: 'apache',
-        files: [],
-    }
+    const options: IMakeOptions = deepCopy(DEFAULT_OPTIONS)
 
     while (index < len) {
         const next: string = args[index]
@@ -28,13 +29,19 @@ export function resolveOptions(args: Array<string>): IMakeOptions {
                     if (lstatSync(options.rootDir).isDirectory()) {
                         index += 2
                         break
-
                     } else {
-                        throw new Error(`Provided root directory "${options.rootDir}" isn't a directory`)
+                        throw new Error(
+                            `Provided root directory "${
+                                options.rootDir
+                            }" isn't a directory`,
+                        )
                     }
-
                 } catch (e) {
-                    throw new Error(`Provided root directory "${options.rootDir}" doesn't exist`)
+                    throw new Error(
+                        `Provided root directory "${
+                            options.rootDir
+                        }" doesn't exist`,
+                    )
                 }
 
             case '--sourceDir':
@@ -57,9 +64,25 @@ export function resolveOptions(args: Array<string>): IMakeOptions {
                 index += 2
                 break
 
+            case '--library':
+                options.library = args[index + 1]
+                index += 2
+
+            case '--fallbackNamespace':
+                options.fallbackNamespace = args[index + 1]
+                index += 2
+                break
+
+            case '--strictUnions':
+                options.strictUnions = true
+                index += 1
+                break
+
             default:
                 if (next.startsWith('--')) {
-                    throw new Error(`Unknown option provided to generator "${next}"`)
+                    throw new Error(
+                        `Unknown option provided to generator "${next}"`,
+                    )
                 } else {
                     // Assume option is a file to render
                     options.files.push(next)
@@ -68,5 +91,7 @@ export function resolveOptions(args: Array<string>): IMakeOptions {
         }
     }
 
-    return options
+    return deepMerge(options, {
+        library: defaultLibrary(options),
+    })
 }

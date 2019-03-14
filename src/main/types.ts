@@ -37,41 +37,65 @@ export interface IMakeOptions {
 
     // What core libs are you compiling for?
     target: CompileTarget
+
+    // What namespace do we fallback to? Set to 'none' to not fallback.
+    fallbackNamespace: string
+
+    // What is the library to import thrift from
+    // Defaults to 'thrift' for target = 'apache'
+    // Defaults to '@creditkarma/thrift-server-core' for target = 'thrift-server'
+    library: string
+
+    // Should we render strict unions?
+    strictUnions: boolean
+}
+
+export interface IRenderState {
+    identifiers: IIdentifierMap
+    options: IMakeOptions
 }
 
 export interface IRenderer {
     renderIncludes(
-        outPath: string,
         currentPath: string,
-        resolvedFile: INamespaceFile): Array<ts.Statement>
+        resolvedFile: INamespaceFile,
+        options: IMakeOptions,
+    ): Array<ts.Statement>
 
     renderConst(
         statement: ConstDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderTypeDef(
         statement: TypedefDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderEnum(
         statement: EnumDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderStruct(
         statement: StructDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderException(
         statement: ExceptionDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderUnion(
         statement: UnionDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 
     renderService(
         statement: ServiceDefinition,
-        identifiers?: IIdentifierMap): Array<ts.Statement>
+        state: IRenderState,
+    ): Array<ts.Statement>
 }
 
 /**
@@ -83,12 +107,6 @@ export interface IRenderer {
  *
  *
  */
-
-export interface IRenderState {
-    includeCache: IIncludeCache
-    resolvedCache: IResolvedCache
-    renderedCache: IRenderedCache
-}
 
 export interface IThriftFile {
     name: string

@@ -7,6 +7,9 @@ import {
     IResolvedFile,
     IResolvedIdentifier,
 } from '../../types'
+import { COMMON_IDENTIFIERS } from '../shared/identifiers'
+
+const DEFAULT_THRIFT_LIB: string = '@creditkarma/thrift-server-core'
 
 /**
  * import * as thrift from 'thrift';
@@ -14,21 +17,24 @@ import {
  * I would really like this to only import what is being used by the file we're
  * generating. We'll need to keep track of what each files uses.
  */
-export function renderThriftImports(): ts.ImportDeclaration {
+export function renderThriftImports(
+    thriftLib: string = DEFAULT_THRIFT_LIB,
+): ts.ImportDeclaration {
     return ts.createImportDeclaration(
         undefined,
         undefined,
         ts.createImportClause(
             undefined,
-            ts.createNamespaceImport(
-                ts.createIdentifier('thrift'),
-            ),
+            ts.createNamespaceImport(COMMON_IDENTIFIERS.thrift),
         ),
-        ts.createLiteral('@creditkarma/thrift-server-core'),
+        ts.createLiteral(thriftLib),
     )
 }
 
-function existInIdentifiers(name: string, identifiers: IIdentifierMap): boolean {
+function existInIdentifiers(
+    name: string,
+    identifiers: IIdentifierMap,
+): boolean {
     for (const next in identifiers) {
         if (identifiers.hasOwnProperty(next)) {
             const identifier = identifiers[next]
@@ -50,36 +56,36 @@ function existInIdentifiers(name: string, identifiers: IIdentifierMap): boolean 
  * @param resolved A hash of include name to a list of ids used from this include
  */
 export function renderIncludes(
-    outPath: string,
     currentPath: string,
     resolvedFile: INamespaceFile,
 ): Array<ts.ImportDeclaration> {
     const imports: Array<ts.ImportDeclaration> = []
     for (const name of Object.keys(resolvedFile.includes)) {
         if (existInIdentifiers(name, resolvedFile.identifiers)) {
-            const resolvedIncludes: Array<IResolvedIdentifier> = resolvedFile.includes[name].identifiers
+            const resolvedIncludes: Array<IResolvedIdentifier> =
+                resolvedFile.includes[name].identifiers
             const includeFile: IResolvedFile = resolvedFile.includes[name].file
 
             if (resolvedIncludes != null && resolvedFile != null) {
                 const includePath: string = includeFile.namespace.path
-                imports.push(ts.createImportDeclaration(
-                    undefined,
-                    undefined,
-                    ts.createImportClause(
+                imports.push(
+                    ts.createImportDeclaration(
                         undefined,
-                        ts.createNamespaceImport(
-                            ts.createIdentifier(name),
+                        undefined,
+                        ts.createImportClause(
+                            undefined,
+                            ts.createNamespaceImport(ts.createIdentifier(name)),
+                        ),
+                        ts.createLiteral(
+                            `./${path.join(
+                                path.relative(
+                                    path.dirname(currentPath),
+                                    path.dirname(includePath),
+                                ),
+                            )}`,
                         ),
                     ),
-                    ts.createLiteral(
-                        `./${path.join(
-                            path.relative(
-                                path.dirname(currentPath),
-                                path.dirname(includePath),
-                            ),
-                        )}`,
-                    ),
-                ))
+                )
             }
         }
     }

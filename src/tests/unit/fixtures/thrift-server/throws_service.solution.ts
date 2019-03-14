@@ -53,6 +53,8 @@ export const ServiceExceptionCodec: thrift.IStructCodec<IServiceExceptionArgs, I
 };
 export class ServiceException extends thrift.StructLike implements IServiceException {
     public message?: string;
+    public readonly _annotations: thrift.IThriftAnnotations = {};
+    public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
     constructor(args: IServiceExceptionArgs = {}) {
         super();
         if (args.message != null) {
@@ -71,18 +73,31 @@ export class ServiceException extends thrift.StructLike implements IServiceExcep
     }
 }
 export namespace MyService {
-    export interface IPegArgs {
+    export const serviceName: string = "MyService";
+    export const annotations: thrift.IThriftAnnotations = {};
+    export const methodAnnotations: thrift.IMethodAnnotations = {
+        peg: {
+            annotations: {},
+            fieldAnnotations: {}
+        },
+        pong: {
+            annotations: {},
+            fieldAnnotations: {}
+        }
+    };
+    export const methodNames: Array<string> = ["peg", "pong"];
+    export interface IPeg__Args {
         name: string;
     }
-    export interface IPegArgsArgs {
+    export interface IPeg__ArgsArgs {
         name: string;
     }
-    export const PegArgsCodec: thrift.IStructCodec<IPegArgsArgs, IPegArgs> = {
-        encode(args: IPegArgsArgs, output: thrift.TProtocol): void {
+    export const Peg__ArgsCodec: thrift.IStructCodec<IPeg__ArgsArgs, IPeg__Args> = {
+        encode(args: IPeg__ArgsArgs, output: thrift.TProtocol): void {
             const obj = {
                 name: args.name
             };
-            output.writeStructBegin("PegArgs");
+            output.writeStructBegin("Peg__Args");
             if (obj.name != null) {
                 output.writeFieldBegin("name", thrift.TType.STRING, 1);
                 output.writeString(obj.name);
@@ -95,7 +110,7 @@ export namespace MyService {
             output.writeStructEnd();
             return;
         },
-        decode(input: thrift.TProtocol): IPegArgs {
+        decode(input: thrift.TProtocol): IPeg__Args {
             let _args: any = {};
             input.readStructBegin();
             while (true) {
@@ -128,13 +143,15 @@ export namespace MyService {
                 };
             }
             else {
-                throw new thrift.TProtocolException(thrift.TProtocolExceptionType.UNKNOWN, "Unable to read PegArgs from input");
+                throw new thrift.TProtocolException(thrift.TProtocolExceptionType.UNKNOWN, "Unable to read Peg__Args from input");
             }
         }
     };
-    export class PegArgs extends thrift.StructLike implements IPegArgs {
+    export class Peg__Args extends thrift.StructLike implements IPeg__Args {
         public name: string;
-        constructor(args: IPegArgsArgs) {
+        public readonly _annotations: thrift.IThriftAnnotations = {};
+        public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
+        constructor(args: IPeg__ArgsArgs) {
             super();
             if (args.name != null) {
                 const value_4: string = args.name;
@@ -144,28 +161,28 @@ export namespace MyService {
                 throw new thrift.TProtocolException(thrift.TProtocolExceptionType.UNKNOWN, "Required field[name] is unset!");
             }
         }
-        public static read(input: thrift.TProtocol): PegArgs {
-            return new PegArgs(PegArgsCodec.decode(input));
+        public static read(input: thrift.TProtocol): Peg__Args {
+            return new Peg__Args(Peg__ArgsCodec.decode(input));
         }
-        public static write(args: IPegArgsArgs, output: thrift.TProtocol): void {
-            return PegArgsCodec.encode(args, output);
+        public static write(args: IPeg__ArgsArgs, output: thrift.TProtocol): void {
+            return Peg__ArgsCodec.encode(args, output);
         }
         public write(output: thrift.TProtocol): void {
-            return PegArgsCodec.encode(this, output);
+            return Peg__ArgsCodec.encode(this, output);
         }
     }
-    export interface IPongArgs {
+    export interface IPong__Args {
         name?: string;
     }
-    export interface IPongArgsArgs {
+    export interface IPong__ArgsArgs {
         name?: string;
     }
-    export const PongArgsCodec: thrift.IStructCodec<IPongArgsArgs, IPongArgs> = {
-        encode(args: IPongArgsArgs, output: thrift.TProtocol): void {
+    export const Pong__ArgsCodec: thrift.IStructCodec<IPong__ArgsArgs, IPong__Args> = {
+        encode(args: IPong__ArgsArgs, output: thrift.TProtocol): void {
             const obj = {
                 name: args.name
             };
-            output.writeStructBegin("PongArgs");
+            output.writeStructBegin("Pong__Args");
             if (obj.name != null) {
                 output.writeFieldBegin("name", thrift.TType.STRING, 1);
                 output.writeString(obj.name);
@@ -175,7 +192,7 @@ export namespace MyService {
             output.writeStructEnd();
             return;
         },
-        decode(input: thrift.TProtocol): IPongArgs {
+        decode(input: thrift.TProtocol): IPong__Args {
             let _args: any = {};
             input.readStructBegin();
             while (true) {
@@ -207,40 +224,42 @@ export namespace MyService {
             };
         }
     };
-    export class PongArgs extends thrift.StructLike implements IPongArgs {
+    export class Pong__Args extends thrift.StructLike implements IPong__Args {
         public name?: string;
-        constructor(args: IPongArgsArgs = {}) {
+        public readonly _annotations: thrift.IThriftAnnotations = {};
+        public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
+        constructor(args: IPong__ArgsArgs = {}) {
             super();
             if (args.name != null) {
                 const value_6: string = args.name;
                 this.name = value_6;
             }
         }
-        public static read(input: thrift.TProtocol): PongArgs {
-            return new PongArgs(PongArgsCodec.decode(input));
+        public static read(input: thrift.TProtocol): Pong__Args {
+            return new Pong__Args(Pong__ArgsCodec.decode(input));
         }
-        public static write(args: IPongArgsArgs, output: thrift.TProtocol): void {
-            return PongArgsCodec.encode(args, output);
+        public static write(args: IPong__ArgsArgs, output: thrift.TProtocol): void {
+            return Pong__ArgsCodec.encode(args, output);
         }
         public write(output: thrift.TProtocol): void {
-            return PongArgsCodec.encode(this, output);
+            return Pong__ArgsCodec.encode(this, output);
         }
     }
-    export interface IPegResult {
+    export interface IPeg__Result {
         success?: string;
         exp?: IServiceException;
     }
-    export interface IPegResultArgs {
+    export interface IPeg__ResultArgs {
         success?: string;
         exp?: IServiceExceptionArgs;
     }
-    export const PegResultCodec: thrift.IStructCodec<IPegResultArgs, IPegResult> = {
-        encode(args: IPegResultArgs, output: thrift.TProtocol): void {
+    export const Peg__ResultCodec: thrift.IStructCodec<IPeg__ResultArgs, IPeg__Result> = {
+        encode(args: IPeg__ResultArgs, output: thrift.TProtocol): void {
             const obj = {
                 success: args.success,
                 exp: args.exp
             };
-            output.writeStructBegin("PegResult");
+            output.writeStructBegin("Peg__Result");
             if (obj.success != null) {
                 output.writeFieldBegin("success", thrift.TType.STRING, 0);
                 output.writeString(obj.success);
@@ -255,7 +274,7 @@ export namespace MyService {
             output.writeStructEnd();
             return;
         },
-        decode(input: thrift.TProtocol): IPegResult {
+        decode(input: thrift.TProtocol): IPeg__Result {
             let _args: any = {};
             input.readStructBegin();
             while (true) {
@@ -297,10 +316,12 @@ export namespace MyService {
             };
         }
     };
-    export class PegResult extends thrift.StructLike implements IPegResult {
+    export class Peg__Result extends thrift.StructLike implements IPeg__Result {
         public success?: string;
         public exp?: IServiceException;
-        constructor(args: IPegResultArgs = {}) {
+        public readonly _annotations: thrift.IThriftAnnotations = {};
+        public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
+        constructor(args: IPeg__ResultArgs = {}) {
             super();
             if (args.success != null) {
                 const value_9: string = args.success;
@@ -311,28 +332,28 @@ export namespace MyService {
                 this.exp = value_10;
             }
         }
-        public static read(input: thrift.TProtocol): PegResult {
-            return new PegResult(PegResultCodec.decode(input));
+        public static read(input: thrift.TProtocol): Peg__Result {
+            return new Peg__Result(Peg__ResultCodec.decode(input));
         }
-        public static write(args: IPegResultArgs, output: thrift.TProtocol): void {
-            return PegResultCodec.encode(args, output);
+        public static write(args: IPeg__ResultArgs, output: thrift.TProtocol): void {
+            return Peg__ResultCodec.encode(args, output);
         }
         public write(output: thrift.TProtocol): void {
-            return PegResultCodec.encode(this, output);
+            return Peg__ResultCodec.encode(this, output);
         }
     }
-    export interface IPongResult {
+    export interface IPong__Result {
         success?: string;
     }
-    export interface IPongResultArgs {
+    export interface IPong__ResultArgs {
         success?: string;
     }
-    export const PongResultCodec: thrift.IStructCodec<IPongResultArgs, IPongResult> = {
-        encode(args: IPongResultArgs, output: thrift.TProtocol): void {
+    export const Pong__ResultCodec: thrift.IStructCodec<IPong__ResultArgs, IPong__Result> = {
+        encode(args: IPong__ResultArgs, output: thrift.TProtocol): void {
             const obj = {
                 success: args.success
             };
-            output.writeStructBegin("PongResult");
+            output.writeStructBegin("Pong__Result");
             if (obj.success != null) {
                 output.writeFieldBegin("success", thrift.TType.STRING, 0);
                 output.writeString(obj.success);
@@ -342,7 +363,7 @@ export namespace MyService {
             output.writeStructEnd();
             return;
         },
-        decode(input: thrift.TProtocol): IPongResult {
+        decode(input: thrift.TProtocol): IPong__Result {
             let _args: any = {};
             input.readStructBegin();
             while (true) {
@@ -374,45 +395,42 @@ export namespace MyService {
             };
         }
     };
-    export class PongResult extends thrift.StructLike implements IPongResult {
+    export class Pong__Result extends thrift.StructLike implements IPong__Result {
         public success?: string;
-        constructor(args: IPongResultArgs = {}) {
+        public readonly _annotations: thrift.IThriftAnnotations = {};
+        public readonly _fieldAnnotations: thrift.IFieldAnnotations = {};
+        constructor(args: IPong__ResultArgs = {}) {
             super();
             if (args.success != null) {
                 const value_12: string = args.success;
                 this.success = value_12;
             }
         }
-        public static read(input: thrift.TProtocol): PongResult {
-            return new PongResult(PongResultCodec.decode(input));
+        public static read(input: thrift.TProtocol): Pong__Result {
+            return new Pong__Result(Pong__ResultCodec.decode(input));
         }
-        public static write(args: IPongResultArgs, output: thrift.TProtocol): void {
-            return PongResultCodec.encode(args, output);
+        public static write(args: IPong__ResultArgs, output: thrift.TProtocol): void {
+            return Pong__ResultCodec.encode(args, output);
         }
         public write(output: thrift.TProtocol): void {
-            return PongResultCodec.encode(this, output);
+            return Pong__ResultCodec.encode(this, output);
         }
     }
-    export class Client<Context = any> {
-        protected _requestId: number;
-        protected transport: thrift.ITransportConstructor;
-        protected protocol: thrift.IProtocolConstructor;
-        protected connection: thrift.IThriftConnection<Context>;
-        constructor(connection: thrift.IThriftConnection<Context>) {
-            this._requestId = 0;
-            this.transport = connection.Transport;
-            this.protocol = connection.Protocol;
-            this.connection = connection;
-        }
-        protected incrementRequestId(): number {
-            return this._requestId += 1;
-        }
+    export class Client<Context = any> extends thrift.ThriftClient<Context> {
+        public static readonly serviceName: string = serviceName;
+        public static readonly annotations: thrift.IThriftAnnotations = annotations;
+        public static readonly methodAnnotations: thrift.IMethodAnnotations = methodAnnotations;
+        public static readonly methodNames: Array<string> = methodNames;
+        public readonly _serviceName: string = serviceName;
+        public readonly _annotations: thrift.IThriftAnnotations = annotations;
+        public readonly _methodAnnotations: thrift.IMethodAnnotations = methodAnnotations;
+        public readonly _methodNames: Array<string> = methodNames;
         public peg(name: string, context?: Context): Promise<string> {
             const writer: thrift.TTransport = new this.transport();
             const output: thrift.TProtocol = new this.protocol(writer);
             output.writeMessageBegin("peg", thrift.MessageType.CALL, this.incrementRequestId());
-            const args: IPegArgsArgs = { name };
-            PegArgsCodec.encode(args, output);
+            const args: IPeg__ArgsArgs = { name };
+            Peg__ArgsCodec.encode(args, output);
             output.writeMessageEnd();
             return this.connection.send(writer.flush(), context).then((data: Buffer) => {
                 const reader: thrift.TTransport = this.transport.receiver(data);
@@ -425,16 +443,18 @@ export namespace MyService {
                             input.readMessageEnd();
                             return Promise.reject(err);
                         }
-                        const result: IPegResult = PegResultCodec.decode(input);
-                        input.readMessageEnd();
-                        if (result.exp != null) {
-                            return Promise.reject(result.exp);
-                        }
-                        if (result.success != null) {
-                            return Promise.resolve(result.success);
-                        }
                         else {
-                            return Promise.reject(new thrift.TApplicationException(thrift.TApplicationExceptionType.UNKNOWN, "peg failed: unknown result"));
+                            const result: IPeg__Result = Peg__ResultCodec.decode(input);
+                            input.readMessageEnd();
+                            if (result.exp != null) {
+                                return Promise.reject(result.exp);
+                            }
+                            else if (result.success != null) {
+                                return Promise.resolve(result.success);
+                            }
+                            else {
+                                return Promise.reject(new thrift.TApplicationException(thrift.TApplicationExceptionType.UNKNOWN, "peg failed: unknown result"));
+                            }
                         }
                     }
                     else {
@@ -450,8 +470,8 @@ export namespace MyService {
             const writer: thrift.TTransport = new this.transport();
             const output: thrift.TProtocol = new this.protocol(writer);
             output.writeMessageBegin("pong", thrift.MessageType.CALL, this.incrementRequestId());
-            const args: IPongArgsArgs = { name };
-            PongArgsCodec.encode(args, output);
+            const args: IPong__ArgsArgs = { name };
+            Pong__ArgsCodec.encode(args, output);
             output.writeMessageEnd();
             return this.connection.send(writer.flush(), context).then((data: Buffer) => {
                 const reader: thrift.TTransport = this.transport.receiver(data);
@@ -464,13 +484,15 @@ export namespace MyService {
                             input.readMessageEnd();
                             return Promise.reject(err);
                         }
-                        const result: IPongResult = PongResultCodec.decode(input);
-                        input.readMessageEnd();
-                        if (result.success != null) {
-                            return Promise.resolve(result.success);
-                        }
                         else {
-                            return Promise.reject(new thrift.TApplicationException(thrift.TApplicationExceptionType.UNKNOWN, "pong failed: unknown result"));
+                            const result: IPong__Result = Pong__ResultCodec.decode(input);
+                            input.readMessageEnd();
+                            if (result.success != null) {
+                                return Promise.resolve(result.success);
+                            }
+                            else {
+                                return Promise.reject(new thrift.TApplicationException(thrift.TApplicationExceptionType.UNKNOWN, "pong failed: unknown result"));
+                            }
                         }
                     }
                     else {
@@ -487,9 +509,18 @@ export namespace MyService {
         peg(name: string, context?: Context): string | Promise<string>;
         pong(name?: string, context?: Context): string | Promise<string>;
     }
-    export class Processor<Context = any> {
-        public _handler: IHandler<Context>;
+    export class Processor<Context = any> extends thrift.ThriftProcessor<Context, IHandler<Context>> {
+        protected readonly _handler: IHandler<Context>;
+        public static readonly serviceName: string = serviceName;
+        public static readonly annotations: thrift.IThriftAnnotations = annotations;
+        public static readonly methodAnnotations: thrift.IMethodAnnotations = methodAnnotations;
+        public static readonly methodNames: Array<string> = methodNames;
+        public readonly _serviceName: string = serviceName;
+        public readonly _annotations: thrift.IThriftAnnotations = annotations;
+        public readonly _methodAnnotations: thrift.IMethodAnnotations = methodAnnotations;
+        public readonly _methodNames: Array<string> = methodNames;
         constructor(handler: IHandler<Context>) {
+            super();
             this._handler = handler;
         }
         public process(input: thrift.TProtocol, output: thrift.TProtocol, context: Context): Promise<Buffer> {
@@ -524,7 +555,7 @@ export namespace MyService {
         public process_peg(requestId: number, input: thrift.TProtocol, output: thrift.TProtocol, context: Context): Promise<Buffer> {
             return new Promise<string>((resolve, reject): void => {
                 try {
-                    const args: IPegArgs = PegArgsCodec.decode(input);
+                    const args: IPeg__Args = Peg__ArgsCodec.decode(input);
                     input.readMessageEnd();
                     resolve(this._handler.peg(args.name, context));
                 }
@@ -532,16 +563,16 @@ export namespace MyService {
                     reject(err);
                 }
             }).then((data: string): Buffer => {
-                const result: IPegResult = { success: data };
+                const result: IPeg__ResultArgs = { success: data };
                 output.writeMessageBegin("peg", thrift.MessageType.REPLY, requestId);
-                PegResultCodec.encode(result, output);
+                Peg__ResultCodec.encode(result, output);
                 output.writeMessageEnd();
                 return output.flush();
             }).catch((err: Error): Buffer => {
                 if (err instanceof ServiceException) {
-                    const result: IPegResult = { exp: err };
+                    const result: IPeg__ResultArgs = { exp: err };
                     output.writeMessageBegin("peg", thrift.MessageType.REPLY, requestId);
-                    PegResultCodec.encode(result, output);
+                    Peg__ResultCodec.encode(result, output);
                     output.writeMessageEnd();
                     return output.flush();
                 }
@@ -557,7 +588,7 @@ export namespace MyService {
         public process_pong(requestId: number, input: thrift.TProtocol, output: thrift.TProtocol, context: Context): Promise<Buffer> {
             return new Promise<string>((resolve, reject): void => {
                 try {
-                    const args: IPongArgs = PongArgsCodec.decode(input);
+                    const args: IPong__Args = Pong__ArgsCodec.decode(input);
                     input.readMessageEnd();
                     resolve(this._handler.pong(args.name, context));
                 }
@@ -565,9 +596,9 @@ export namespace MyService {
                     reject(err);
                 }
             }).then((data: string): Buffer => {
-                const result: IPongResult = { success: data };
+                const result: IPong__ResultArgs = { success: data };
                 output.writeMessageBegin("pong", thrift.MessageType.REPLY, requestId);
-                PongResultCodec.encode(result, output);
+                Pong__ResultCodec.encode(result, output);
                 output.writeMessageEnd();
                 return output.flush();
             }).catch((err: Error): Buffer => {
